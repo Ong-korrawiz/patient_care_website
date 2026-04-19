@@ -1,0 +1,51 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: patient_care_postgres
+    environment:
+      POSTGRES_USER: patient_care
+      POSTGRES_PASSWORD: secure_password_change_me
+      POSTGRES_DB: patient_care_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patient_care -d patient_care_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - patient_care_network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: patient_care_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password_change_me
+      MONGO_INITDB_DATABASE: patient_care_routine
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - patient_care_network
+
+networks:
+  patient_care_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  mongo_data:
+    driver: local
